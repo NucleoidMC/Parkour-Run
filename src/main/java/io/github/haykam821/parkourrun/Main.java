@@ -10,16 +10,20 @@ import net.minecraft.util.Identifier;
 import xyz.nucleoid.plasmid.game.GameType;
 
 public class Main implements ModInitializer {
-	public static final String MOD_ID = "parkourrun";
+	private static final String MOD_ID = "parkourrun";
 
-	private static final Identifier ENDING_PLATFORMS_ID = new Identifier(MOD_ID, "ending_platforms");
+	private static final Identifier ENDING_PLATFORMS_ID = Main.identifier("ending_platforms");
 	public static final TagKey<Block> ENDING_PLATFORMS = TagKey.of(RegistryKeys.BLOCK, ENDING_PLATFORMS_ID);
 
-	private static final Identifier PARKOUR_RUN_ID = new Identifier(MOD_ID, "parkour_run");
+	private static final Identifier PARKOUR_RUN_ID = Main.identifier("parkour_run");
 	public static final GameType<ParkourRunConfig> PARKOUR_RUN_TYPE = GameType.register(PARKOUR_RUN_ID, ParkourRunConfig.CODEC, ParkourRunWaitingPhase::open);
 
 	@Override
 	public void onInitialize() {
 		return;
+	}
+
+	public static Identifier identifier(String path) {
+		return new Identifier(MOD_ID, path);
 	}
 }

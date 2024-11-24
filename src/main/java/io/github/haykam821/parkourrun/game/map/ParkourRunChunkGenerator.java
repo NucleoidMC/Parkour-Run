@@ -31,10 +31,10 @@ import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.plasmid.game.world.generator.GameChunkGenerator;
 
 public class ParkourRunChunkGenerator extends GameChunkGenerator {
-	private static final Identifier STARTS_ID = new Identifier(Main.MOD_ID, "starts");
-	private static final Identifier AREAS_ID = new Identifier(Main.MOD_ID, "areas");
-	private static final Identifier CONNECTORS_ID = new Identifier(Main.MOD_ID, "connectors");
-	private static final Identifier ENDINGS_ID = new Identifier(Main.MOD_ID, "endings");
+	private static final Identifier STARTS_ID = Main.identifier("starts");
+	private static final Identifier AREAS_ID = Main.identifier("areas");
+	private static final Identifier CONNECTORS_ID = Main.identifier("connectors");
+	private static final Identifier ENDINGS_ID = Main.identifier("endings");
 
 	private final ParkourRunMap map;
 	private final StructureTemplateManager structureTemplateManager;
