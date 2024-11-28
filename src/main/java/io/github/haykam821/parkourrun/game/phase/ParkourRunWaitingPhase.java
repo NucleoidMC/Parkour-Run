@@ -6,18 +6,19 @@ import io.github.haykam821.parkourrun.game.map.ParkourRunMap;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.ActionResult;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.fantasy.RuntimeWorldConfig;
-import xyz.nucleoid.plasmid.game.GameOpenContext;
-import xyz.nucleoid.plasmid.game.GameOpenProcedure;
-import xyz.nucleoid.plasmid.game.GameResult;
-import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.common.GameWaitingLobby;
-import xyz.nucleoid.plasmid.game.event.GameActivityEvents;
-import xyz.nucleoid.plasmid.game.event.GamePlayerEvents;
-import xyz.nucleoid.plasmid.game.player.PlayerOffer;
-import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
+import xyz.nucleoid.plasmid.api.game.GameOpenContext;
+import xyz.nucleoid.plasmid.api.game.GameOpenProcedure;
+import xyz.nucleoid.plasmid.api.game.GameResult;
+import xyz.nucleoid.plasmid.api.game.GameSpace;
+import xyz.nucleoid.plasmid.api.game.common.GameWaitingLobby;
+import xyz.nucleoid.plasmid.api.game.event.GameActivityEvents;
+import xyz.nucleoid.plasmid.api.game.event.GamePlayerEvents;
+import xyz.nucleoid.plasmid.api.game.player.JoinAcceptor;
+import xyz.nucleoid.plasmid.api.game.player.JoinAcceptorResult;
+import xyz.nucleoid.plasmid.api.game.player.JoinOffer;
+import xyz.nucleoid.stimuli.event.EventResult;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
 public class ParkourRunWaitingPhase {
@@ -43,7 +44,8 @@ public class ParkourRunWaitingPhase {
 			ParkourRunActivePhase.setRules(activity);
 
 			// Listeners
-			activity.listen(GamePlayerEvents.OFFER, phase::offerPlayer);
+			activity.listen(GamePlayerEvents.ACCEPT, phase::onAcceptPlayers);
+			activity.listen(GamePlayerEvents.OFFER, JoinOffer::accept);
 			activity.listen(PlayerDeathEvent.EVENT, phase::onPlayerDeath);
 			activity.listen(GameActivityEvents.REQUEST_START, phase::requestStart);
 		});
@@ -54,15 +56,15 @@ public class ParkourRunWaitingPhase {
 		return GameResult.ok();
 	}
 
-	public PlayerOfferResult offerPlayer(PlayerOffer offer) {
-		return offer.accept(this.world, this.spawnLogic.getSpawnPos()).and(() -> {
-			offer.player().changeGameMode(GameMode.ADVENTURE);
+	public JoinAcceptorResult onAcceptPlayers(JoinAcceptor acceptor) {
+		return acceptor.teleport(this.world, this.spawnLogic.getSpawnPos()).thenRunForEach(player -> {
+			player.changeGameMode(GameMode.ADVENTURE);
 		});
 	}
 
-	public ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
+	public EventResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
 		// Respawn player at the start
 		this.spawnLogic.spawnPlayer(player);
-		return ActionResult.FAIL;
+		return EventResult.DENY;
 	}
 }

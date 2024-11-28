@@ -11,16 +11,17 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.ActionResult;
 import net.minecraft.world.GameMode;
-import xyz.nucleoid.plasmid.game.GameActivity;
-import xyz.nucleoid.plasmid.game.GameCloseReason;
-import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.event.GameActivityEvents;
-import xyz.nucleoid.plasmid.game.event.GamePlayerEvents;
-import xyz.nucleoid.plasmid.game.player.PlayerOffer;
-import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
-import xyz.nucleoid.plasmid.game.rule.GameRuleType;
+import xyz.nucleoid.plasmid.api.game.GameActivity;
+import xyz.nucleoid.plasmid.api.game.GameCloseReason;
+import xyz.nucleoid.plasmid.api.game.GameSpace;
+import xyz.nucleoid.plasmid.api.game.event.GameActivityEvents;
+import xyz.nucleoid.plasmid.api.game.event.GamePlayerEvents;
+import xyz.nucleoid.plasmid.api.game.player.JoinAcceptor;
+import xyz.nucleoid.plasmid.api.game.player.JoinAcceptorResult;
+import xyz.nucleoid.plasmid.api.game.player.JoinOffer;
+import xyz.nucleoid.plasmid.api.game.rule.GameRuleType;
+import xyz.nucleoid.stimuli.event.EventResult;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
 public class ParkourRunActivePhase {
@@ -34,7 +35,7 @@ public class ParkourRunActivePhase {
 		this.gameSpace = gameSpace;
 		this.world = world;
 		this.spawnLogic = spawnLogic;
-		this.players = Sets.newHashSet(gameSpace.getPlayers());
+		this.players = Sets.newHashSet(gameSpace.getPlayers().participants());
 		this.startTime = world.getTime();
 	}
 
@@ -53,10 +54,19 @@ public class ParkourRunActivePhase {
 			ParkourRunActivePhase.setRules(activity);
 
 			// Listeners
+			activity.listen(GameActivityEvents.ENABLE, phase::enable);
 			activity.listen(GameActivityEvents.TICK, phase::tick);
-			activity.listen(GamePlayerEvents.OFFER, phase::offerPlayer);
+			activity.listen(GamePlayerEvents.ACCEPT, phase::onAcceptPlayers);
+			activity.listen(GamePlayerEvents.OFFER, JoinOffer::accept);
 			activity.listen(PlayerDeathEvent.EVENT, phase::onPlayerDeath);
 		});
+	}
+
+	public void enable() {
+		for (ServerPlayerEntity player : this.gameSpace.getPlayers().spectators()) {
+			this.spawnLogic.spawnPlayer(player);
+			player.changeGameMode(GameMode.SPECTATOR);
+		}
 	}
 
 	public void tick() {
@@ -75,19 +85,19 @@ public class ParkourRunActivePhase {
 		}
 	}
 
-	public PlayerOfferResult offerPlayer(PlayerOffer offer) {
-		return offer.accept(this.world, this.spawnLogic.getSpawnPos()).and(() -> {
-			if (this.players.contains(offer.player())) {
-				offer.player().changeGameMode(GameMode.ADVENTURE);
+	public JoinAcceptorResult onAcceptPlayers(JoinAcceptor acceptor) {
+		return acceptor.teleport(this.world, this.spawnLogic.getSpawnPos()).thenRunForEach(player -> {
+			if (this.players.contains(player)) {
+				player.changeGameMode(GameMode.ADVENTURE);
 			} else {
-				offer.player().changeGameMode(GameMode.SPECTATOR);
+				player.changeGameMode(GameMode.SPECTATOR);
 			}
 		});
 	}
 
-	public ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
+	public EventResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
 		// Respawn player at the start
 		this.spawnLogic.spawnPlayer(player);
-		return ActionResult.FAIL;
+		return EventResult.DENY;
 	}
 }

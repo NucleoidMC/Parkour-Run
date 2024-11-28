@@ -12,6 +12,7 @@ import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.structure.PoolStructurePiece;
+import net.minecraft.structure.StructureLiquidSettings;
 import net.minecraft.structure.StructureTemplate;
 import net.minecraft.structure.StructureTemplateManager;
 import net.minecraft.structure.pool.SinglePoolElement;
@@ -28,7 +29,7 @@ import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.StructureAccessor;
 import xyz.nucleoid.map_templates.BlockBounds;
-import xyz.nucleoid.plasmid.game.world.generator.GameChunkGenerator;
+import xyz.nucleoid.plasmid.api.game.world.generator.GameChunkGenerator;
 
 public class ParkourRunChunkGenerator extends GameChunkGenerator {
 	private static final Identifier STARTS_ID = Main.identifier("starts");
@@ -50,7 +51,7 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 		this.map = map;
 		this.structureTemplateManager = server.getStructureTemplateManager();
 
-		Registry<StructurePool> poolRegistry = server.getRegistryManager().get(RegistryKeys.TEMPLATE_POOL);
+		Registry<StructurePool> poolRegistry = server.getRegistryManager().getOrThrow(RegistryKeys.TEMPLATE_POOL);
 		this.starts = poolRegistry.get(STARTS_ID);
 		this.areas = poolRegistry.get(AREAS_ID);
 		this.connectors = poolRegistry.get(CONNECTORS_ID);
@@ -78,7 +79,7 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 		StructureTemplate structure = ((SinglePoolElement) element).getStructure(this.structureTemplateManager);
 
 		BlockBox box = BlockBox.create(pos, pos.add(structure.getSize()));
-		PoolStructurePiece piece = new PoolStructurePiece(this.structureTemplateManager, element, pos.toImmutable(), 0, BlockRotation.NONE, box);
+		PoolStructurePiece piece = new PoolStructurePiece(this.structureTemplateManager, element, pos.toImmutable(), 0, BlockRotation.NONE, box, StructureLiquidSettings.APPLY_WATERLOGGING);
 		pieces.add(piece);
 
 		this.map.getTemplate().getMetadata().addRegion(marker, BlockBounds.of(pos, pos.add(structure.getSize())));
@@ -114,7 +115,7 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 		List<PoolStructurePiece> pieces = this.piecesByChunk.remove(chunkPos.toLong());
 
 		if (pieces != null) {
-			BlockBox chunkBox = new BlockBox(chunkPos.getStartX(), world.getBottomY(), chunkPos.getStartZ(), chunkPos.getEndX(), world.getTopY(), chunkPos.getEndZ());
+			BlockBox chunkBox = new BlockBox(chunkPos.getStartX(), world.getBottomY(), chunkPos.getStartZ(), chunkPos.getEndX(), world.getTopYInclusive(), chunkPos.getEndZ());
 			for (PoolStructurePiece piece : pieces) {
 				piece.generate(world, structures, this, world.getRandom(), chunkBox, this.map.getOrigin(), false);
 			}
