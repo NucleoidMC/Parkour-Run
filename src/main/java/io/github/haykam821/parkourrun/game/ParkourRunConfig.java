@@ -1,23 +1,23 @@
 package io.github.haykam821.parkourrun.game;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import io.github.haykam821.parkourrun.game.map.ParkourRunMapConfig;
-import xyz.nucleoid.plasmid.game.common.config.PlayerConfig;
+import xyz.nucleoid.plasmid.api.game.common.config.WaitingLobbyConfig;
 
 public class ParkourRunConfig {
-	public static final Codec<ParkourRunConfig> CODEC = RecordCodecBuilder.create(instance -> {
+	public static final MapCodec<ParkourRunConfig> CODEC = RecordCodecBuilder.mapCodec(instance -> {
 		return instance.group(
 			ParkourRunMapConfig.CODEC.fieldOf("map").forGetter(ParkourRunConfig::getMapConfig),
-			PlayerConfig.CODEC.fieldOf("players").forGetter(ParkourRunConfig::getPlayerConfig)
+			WaitingLobbyConfig.CODEC.fieldOf("players").forGetter(ParkourRunConfig::getPlayerConfig)
 		).apply(instance, ParkourRunConfig::new);
 	});
 
 	private final ParkourRunMapConfig mapConfig;
-	private final PlayerConfig playerConfig;
+	private final WaitingLobbyConfig playerConfig;
 
-	public ParkourRunConfig(ParkourRunMapConfig mapConfig, PlayerConfig playerConfig) {
+	public ParkourRunConfig(ParkourRunMapConfig mapConfig, WaitingLobbyConfig playerConfig) {
 		this.mapConfig = mapConfig;
 		this.playerConfig = playerConfig;
 	}
@@ -26,7 +26,7 @@ public class ParkourRunConfig {
 		return this.mapConfig;
 	}
 
-	public PlayerConfig getPlayerConfig() {
+	public WaitingLobbyConfig getPlayerConfig() {
 		return this.playerConfig;
 	}
 }
