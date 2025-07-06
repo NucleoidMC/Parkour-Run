@@ -5,6 +5,7 @@ import java.util.Locale;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import xyz.nucleoid.plasmid.api.game.player.PlayerSet;
 
 public class ParkourRunResult {
 	private final PlayerEntity winner;
@@ -23,11 +24,11 @@ public class ParkourRunResult {
 		return this.time / 20f;
 	}
 
-	public Text getText() {
+	public Text getMessage() {
 		return this.winner.getDisplayName().copy().append(String.format(" has won Parkour Run in %,d seconds!", (long) this.getTimeInSeconds(), Locale.ROOT)).formatted(Formatting.GOLD);
 	}
 
-	public void announce(PlayerEntity to) {
-		to.sendMessage(this.getText(), false);
+	public void announceTo(PlayerSet players) {
+		players.sendMessage(this.getMessage());
 	}
 }

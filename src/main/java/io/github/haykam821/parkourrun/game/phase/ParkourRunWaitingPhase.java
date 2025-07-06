@@ -25,21 +25,25 @@ public class ParkourRunWaitingPhase {
 	private final GameSpace gameSpace;
 	private final ServerWorld world;
 	private final ParkourRunSpawnLogic spawnLogic;
+	private final ParkourRunConfig config;
 
-	public ParkourRunWaitingPhase(GameSpace gameSpace, ServerWorld world, ParkourRunMap map) {
+	public ParkourRunWaitingPhase(GameSpace gameSpace, ServerWorld world, ParkourRunMap map, ParkourRunConfig config) {
 		this.gameSpace = gameSpace;
 		this.world = world;
 		this.spawnLogic = new ParkourRunSpawnLogic(map, this.world);
+		this.config = config;
 	}
 
 	public static GameOpenProcedure open(GameOpenContext<ParkourRunConfig> context) {
-		ParkourRunMap map = new ParkourRunMap(context.config().getMapConfig());
+		ParkourRunConfig config = context.config();
+		ParkourRunMap map = new ParkourRunMap(config.getMapConfig());
+
 		RuntimeWorldConfig worldConfig = new RuntimeWorldConfig()
 			.setGenerator(map.createGenerator(context.server()));
 
 		return context.openWithWorld(worldConfig, (activity, world) -> {
-			ParkourRunWaitingPhase phase = new ParkourRunWaitingPhase(activity.getGameSpace(), world, map);
-			GameWaitingLobby.addTo(activity, context.config().getPlayerConfig());
+			ParkourRunWaitingPhase phase = new ParkourRunWaitingPhase(activity.getGameSpace(), world, map, config);
+			GameWaitingLobby.addTo(activity, config.getPlayerConfig());
 
 			ParkourRunActivePhase.setRules(activity);
 
@@ -53,7 +57,7 @@ public class ParkourRunWaitingPhase {
 	}
 
 	public GameResult requestStart() {
-		ParkourRunActivePhase.open(this.gameSpace, this.world, this.spawnLogic);
+		ParkourRunActivePhase.open(this.gameSpace, this.world, this.spawnLogic, this.config);
 		return GameResult.ok();
 	}
 

@@ -6,6 +6,7 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 
 import io.github.haykam821.parkourrun.Main;
+import io.github.haykam821.parkourrun.game.ParkourRunConfig;
 import io.github.haykam821.parkourrun.game.ParkourRunSpawnLogic;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.damage.DamageSource;
@@ -28,13 +29,19 @@ public class ParkourRunActivePhase {
 	private final GameSpace gameSpace;
 	private final ServerWorld world;
 	private final ParkourRunSpawnLogic spawnLogic;
+	private final ParkourRunConfig config;
+
 	private final Set<ServerPlayerEntity> players;
 	private final long startTime;
 
-	public ParkourRunActivePhase(GameSpace gameSpace, ServerWorld world, ParkourRunSpawnLogic spawnLogic) {
+	private int ticksUntilClose = -1;
+
+	public ParkourRunActivePhase(GameSpace gameSpace, ServerWorld world, ParkourRunSpawnLogic spawnLogic, ParkourRunConfig config) {
 		this.gameSpace = gameSpace;
 		this.world = world;
 		this.spawnLogic = spawnLogic;
+		this.config = config;
+
 		this.players = Sets.newHashSet(gameSpace.getPlayers().participants());
 		this.startTime = world.getTime();
 	}
@@ -47,8 +54,8 @@ public class ParkourRunActivePhase {
 		activity.deny(GameRuleType.HUNGER);
 	}
 
-	public static void open(GameSpace gameSpace, ServerWorld world, ParkourRunSpawnLogic spawnLogic) {
-		ParkourRunActivePhase phase = new ParkourRunActivePhase(gameSpace, world, spawnLogic);
+	public static void open(GameSpace gameSpace, ServerWorld world, ParkourRunSpawnLogic spawnLogic, ParkourRunConfig config) {
+		ParkourRunActivePhase phase = new ParkourRunActivePhase(gameSpace, world, spawnLogic, config);
 
 		gameSpace.setActivity(activity -> {
 			ParkourRunActivePhase.setRules(activity);
@@ -70,6 +77,17 @@ public class ParkourRunActivePhase {
 	}
 
 	public void tick() {
+		// Decrease ticks until game end to zero
+		if (this.isGameEnding()) {
+			if (this.ticksUntilClose == 0) {
+				this.gameSpace.close(GameCloseReason.FINISHED);
+			} else {
+				this.ticksUntilClose -= 1;
+			}
+
+			return;
+		}
+
 		Iterator<ServerPlayerEntity> iterator = this.players.iterator();
 		while (iterator.hasNext()) {
 			ServerPlayerEntity player = iterator.next();
@@ -77,9 +95,9 @@ public class ParkourRunActivePhase {
 			BlockState state = player.getSteppingBlockState();
 			if (state.isIn(Main.ENDING_PLATFORMS)) {
 				ParkourRunResult result = new ParkourRunResult(player, this.world.getTime() - this.startTime);
-				this.gameSpace.getPlayers().forEach(result::announce);
+				result.announceTo(this.gameSpace.getPlayers());
 
-				this.gameSpace.close(GameCloseReason.FINISHED);
+				this.endGame();
 				return;
 			}
 		}
@@ -87,7 +105,7 @@ public class ParkourRunActivePhase {
 
 	public JoinAcceptorResult onAcceptPlayers(JoinAcceptor acceptor) {
 		return this.spawnLogic.acceptPlayers(acceptor).thenRunForEach(player -> {
-			if (this.players.contains(player)) {
+			if (this.players.contains(player) && !this.isGameEnding()) {
 				player.changeGameMode(GameMode.ADVENTURE);
 			} else {
 				player.changeGameMode(GameMode.SPECTATOR);
@@ -99,5 +117,13 @@ public class ParkourRunActivePhase {
 		// Respawn player at the start
 		this.spawnLogic.spawnPlayer(player);
 		return EventResult.DENY;
+	}
+
+	private void endGame() {
+		this.ticksUntilClose = this.config.getTicksUntilClose().get(this.world.getRandom());
+	}
+
+	private boolean isGameEnding() {
+		return this.ticksUntilClose >= 0;
 	}
 }
