@@ -8,6 +8,8 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
 import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.plasmid.api.game.GameSpacePlayers;
+import xyz.nucleoid.plasmid.api.game.player.JoinAcceptor;
+import xyz.nucleoid.plasmid.api.game.player.JoinAcceptorResult;
 
 public class ParkourRunSpawnLogic {
 	private final ParkourRunMap map;
@@ -25,7 +27,11 @@ public class ParkourRunSpawnLogic {
 
 	public void spawnPlayer(ServerPlayerEntity player) {
 		Vec3d pos = this.getSpawnPos();
-		player.teleport(this.world, pos.getX(), pos.getY(), pos.getZ(), Set.of(), player.getYaw(), player.getPitch(), true);
+		player.teleport(this.world, pos.getX(), pos.getY(), pos.getZ(), Set.of(), -90, 0, true);
+	}
+
+	public JoinAcceptorResult.Teleport acceptPlayers(JoinAcceptor acceptor) {
+		return acceptor.teleport(this.world, this.getSpawnPos(), -90, 0);
 	}
 
 	public void teleportWithinBounds(GameSpacePlayers players) {

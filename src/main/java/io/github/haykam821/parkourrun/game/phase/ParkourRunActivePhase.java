@@ -86,7 +86,7 @@ public class ParkourRunActivePhase {
 	}
 
 	public JoinAcceptorResult onAcceptPlayers(JoinAcceptor acceptor) {
-		return acceptor.teleport(this.world, this.spawnLogic.getSpawnPos()).thenRunForEach(player -> {
+		return this.spawnLogic.acceptPlayers(acceptor).thenRunForEach(player -> {
 			if (this.players.contains(player)) {
 				player.changeGameMode(GameMode.ADVENTURE);
 			} else {
