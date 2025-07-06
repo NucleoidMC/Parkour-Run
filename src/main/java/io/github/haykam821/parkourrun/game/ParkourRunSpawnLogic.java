@@ -7,6 +7,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
 import xyz.nucleoid.map_templates.BlockBounds;
+import xyz.nucleoid.plasmid.api.game.GameSpacePlayers;
 
 public class ParkourRunSpawnLogic {
 	private final ParkourRunMap map;
@@ -25,5 +26,17 @@ public class ParkourRunSpawnLogic {
 	public void spawnPlayer(ServerPlayerEntity player) {
 		Vec3d pos = this.getSpawnPos();
 		player.teleport(this.world, pos.getX(), pos.getY(), pos.getZ(), Set.of(), player.getYaw(), player.getPitch(), true);
+	}
+
+	public void teleportWithinBounds(GameSpacePlayers players) {
+		BlockBounds start = this.map.getTemplate().getMetadata().getFirstRegionBounds("start");
+
+		if (start != null) {
+			for (ServerPlayerEntity player : players) {
+				if (!start.contains(player.getBlockPos())) {
+					this.spawnPlayer(player);
+				}
+			}
+		}
 	}
 }

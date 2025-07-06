@@ -78,11 +78,13 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 		if (!(element instanceof SinglePoolElement)) return;
 		StructureTemplate structure = ((SinglePoolElement) element).getStructure(this.structureTemplateManager);
 
-		BlockBox box = BlockBox.create(pos, pos.add(structure.getSize()));
+		BlockPos endPos = pos.add(structure.getSize()).add(-1, -1, -1);
+
+		BlockBox box = BlockBox.create(pos, endPos);
 		PoolStructurePiece piece = new PoolStructurePiece(this.structureTemplateManager, element, pos.toImmutable(), 0, BlockRotation.NONE, box, StructureLiquidSettings.APPLY_WATERLOGGING);
 		pieces.add(piece);
 
-		this.map.getTemplate().getMetadata().addRegion(marker, BlockBounds.of(pos, pos.add(structure.getSize())));
+		this.map.getTemplate().getMetadata().addRegion(marker, BlockBounds.of(pos, endPos));
 		pos.move(Direction.EAST, structure.getSize().getX());
 	}
 

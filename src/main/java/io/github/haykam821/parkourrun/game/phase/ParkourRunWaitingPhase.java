@@ -48,12 +48,17 @@ public class ParkourRunWaitingPhase {
 			activity.listen(GamePlayerEvents.OFFER, JoinOffer::accept);
 			activity.listen(PlayerDeathEvent.EVENT, phase::onPlayerDeath);
 			activity.listen(GameActivityEvents.REQUEST_START, phase::requestStart);
+			activity.listen(GameActivityEvents.TICK, phase::onTick);
 		});
 	}
 
 	public GameResult requestStart() {
 		ParkourRunActivePhase.open(this.gameSpace, this.world, this.spawnLogic);
 		return GameResult.ok();
+	}
+
+	public void onTick() {
+		this.spawnLogic.teleportWithinBounds(this.gameSpace.getPlayers());
 	}
 
 	public JoinAcceptorResult onAcceptPlayers(JoinAcceptor acceptor) {
