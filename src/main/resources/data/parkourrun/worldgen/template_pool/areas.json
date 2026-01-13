@@ -49,5 +49,14 @@
 			"projection": "rigid",
 			"processors": []
 		}
-	}]
+	}, {
+		"weight": 1,
+		"element": {
+			"element_type": "minecraft:single_pool_element",
+			"location": "parkourrun:areas/castle",
+			"projection": "rigid",
+			"processors": []
+		}
+	}
+	]
 }
