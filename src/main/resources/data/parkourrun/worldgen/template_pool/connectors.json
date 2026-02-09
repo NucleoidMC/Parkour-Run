@@ -25,5 +25,21 @@
 			"projection": "rigid",
 			"processors": []
 		}
+	}, {
+		"weight": 1,
+		"element": {
+			"element_type": "minecraft:single_pool_element",
+			"location": "parkourrun:connectors/mansion_connector",
+			"projection": "rigid",
+			"processors": []
+		}
+	}, {
+		"weight": 1,
+		"element": {
+			"element_type": "minecraft:single_pool_element",
+			"location": "parkourrun:connectors/mushroom_connector",
+			"projection": "rigid",
+			"processors": []
+		}
 	}]
 }
