@@ -12,6 +12,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.GameMode;
@@ -54,6 +55,7 @@ public class ParkourRunActivePhase {
 		activity.deny(GameRuleType.PVP);
 		activity.deny(GameRuleType.FALL_DAMAGE);
 		activity.deny(GameRuleType.HUNGER);
+		activity.deny(GameRuleType.INTERACTION);
 	}
 
 	public static void open(GameSpace gameSpace, ServerWorld world, ParkourRunSpawnLogic spawnLogic, ParkourRunConfig config) {
@@ -107,7 +109,7 @@ public class ParkourRunActivePhase {
 			}
 
 			if (this.config.invisiblePlayers()) {
-				player.setStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 20), null);
+				player.setStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 20, 1, false, false), null);
 			}
 		}
 	}
