@@ -10,6 +10,8 @@ import io.github.haykam821.parkourrun.game.ParkourRunConfig;
 import io.github.haykam821.parkourrun.game.ParkourRunSpawnLogic;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.GameMode;
@@ -65,6 +67,7 @@ public class ParkourRunActivePhase {
 			activity.listen(GameActivityEvents.TICK, phase::tick);
 			activity.listen(GamePlayerEvents.ACCEPT, phase::onAcceptPlayers);
 			activity.listen(GamePlayerEvents.OFFER, JoinOffer::accept);
+			activity.listen(GamePlayerEvents.LEAVE, phase.spawnLogic::onPlayerLeave);
 			activity.listen(PlayerDeathEvent.EVENT, phase::onPlayerDeath);
 		});
 	}
@@ -80,6 +83,9 @@ public class ParkourRunActivePhase {
 		// Decrease ticks until game end to zero
 		if (this.isGameEnding()) {
 			if (this.ticksUntilClose == 0) {
+				for (ServerPlayerEntity player : players) {
+					this.spawnLogic.onPlayerLeave(player);
+				}
 				this.gameSpace.close(GameCloseReason.FINISHED);
 			} else {
 				this.ticksUntilClose -= 1;
@@ -91,7 +97,6 @@ public class ParkourRunActivePhase {
 		Iterator<ServerPlayerEntity> iterator = this.players.iterator();
 		while (iterator.hasNext()) {
 			ServerPlayerEntity player = iterator.next();
-
 			BlockState state = player.getSteppingBlockState();
 			if (state.isIn(Main.ENDING_PLATFORMS)) {
 				ParkourRunResult result = new ParkourRunResult(player, this.world.getTime() - this.startTime);
@@ -99,6 +104,10 @@ public class ParkourRunActivePhase {
 
 				this.endGame();
 				return;
+			}
+
+			if (this.config.invisiblePlayers()) {
+				player.setStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 20), null);
 			}
 		}
 	}
@@ -120,7 +129,7 @@ public class ParkourRunActivePhase {
 	}
 
 	private void endGame() {
-		this.ticksUntilClose = this.config.getTicksUntilClose().get(this.world.getRandom());
+		this.ticksUntilClose = this.config.ticksUntilClose().get(this.world.getRandom());
 	}
 
 	private boolean isGameEnding() {

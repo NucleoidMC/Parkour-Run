@@ -30,26 +30,27 @@ public class ParkourRunWaitingPhase {
 	public ParkourRunWaitingPhase(GameSpace gameSpace, ServerWorld world, ParkourRunMap map, ParkourRunConfig config) {
 		this.gameSpace = gameSpace;
 		this.world = world;
-		this.spawnLogic = new ParkourRunSpawnLogic(map, this.world);
+		this.spawnLogic = new ParkourRunSpawnLogic(map, this.world, config.playerCollisions());
 		this.config = config;
 	}
 
 	public static GameOpenProcedure open(GameOpenContext<ParkourRunConfig> context) {
 		ParkourRunConfig config = context.config();
-		ParkourRunMap map = new ParkourRunMap(config.getMapConfig());
+		ParkourRunMap map = new ParkourRunMap(config.mapConfig());
 
 		RuntimeWorldConfig worldConfig = new RuntimeWorldConfig()
 			.setGenerator(map.createGenerator(context.server()));
 
 		return context.openWithWorld(worldConfig, (activity, world) -> {
 			ParkourRunWaitingPhase phase = new ParkourRunWaitingPhase(activity.getGameSpace(), world, map, config);
-			GameWaitingLobby.addTo(activity, config.getPlayerConfig());
+			GameWaitingLobby.addTo(activity, config.playerConfig());
 
 			ParkourRunActivePhase.setRules(activity);
 
 			// Listeners
 			activity.listen(GamePlayerEvents.ACCEPT, phase::onAcceptPlayers);
 			activity.listen(GamePlayerEvents.OFFER, JoinOffer::accept);
+			activity.listen(GamePlayerEvents.LEAVE, phase.spawnLogic::onPlayerLeave);
 			activity.listen(PlayerDeathEvent.EVENT, phase::onPlayerDeath);
 			activity.listen(GameActivityEvents.REQUEST_START, phase::requestStart);
 			activity.listen(GameActivityEvents.TICK, phase::onTick);

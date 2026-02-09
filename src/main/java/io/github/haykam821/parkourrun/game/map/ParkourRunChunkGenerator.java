@@ -93,7 +93,7 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 
 		BlockPos.Mutable pos = this.map.getOrigin().mutableCopy();
 		Random random = Random.createLocal();
-		int areaCount = this.map.getConfig().getAreaCount();
+		int areaCount = this.map.getConfig().areaCount();
 
 		this.generatePiece("start", pieces, this.starts.getRandomElement(random), random, pos);
 		for (int index = 0; index < areaCount; index++) {
