@@ -3,11 +3,11 @@ package io.github.haykam821.parkourrun.game.phase;
 import io.github.haykam821.parkourrun.game.ParkourRunConfig;
 import io.github.haykam821.parkourrun.game.ParkourRunSpawnLogic;
 import io.github.haykam821.parkourrun.game.map.ParkourRunMap;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.world.GameMode;
-import xyz.nucleoid.fantasy.RuntimeWorldConfig;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.GameType;
+import xyz.nucleoid.fantasy.RuntimeLevelConfig;
 import xyz.nucleoid.plasmid.api.game.GameOpenContext;
 import xyz.nucleoid.plasmid.api.game.GameOpenProcedure;
 import xyz.nucleoid.plasmid.api.game.GameResult;
@@ -23,14 +23,14 @@ import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
 public class ParkourRunWaitingPhase {
 	private final GameSpace gameSpace;
-	private final ServerWorld world;
+	private final ServerLevel level;
 	private final ParkourRunSpawnLogic spawnLogic;
 	private final ParkourRunConfig config;
 
-	public ParkourRunWaitingPhase(GameSpace gameSpace, ServerWorld world, ParkourRunMap map, ParkourRunConfig config) {
+	public ParkourRunWaitingPhase(GameSpace gameSpace, ServerLevel level, ParkourRunMap map, ParkourRunConfig config) {
 		this.gameSpace = gameSpace;
-		this.world = world;
-		this.spawnLogic = new ParkourRunSpawnLogic(map, this.world, config.playerCollisions());
+		this.level = level;
+		this.spawnLogic = new ParkourRunSpawnLogic(map, this.level, config.playerCollisions());
 		this.config = config;
 	}
 
@@ -38,11 +38,11 @@ public class ParkourRunWaitingPhase {
 		ParkourRunConfig config = context.config();
 		ParkourRunMap map = new ParkourRunMap(config.mapConfig());
 
-		RuntimeWorldConfig worldConfig = new RuntimeWorldConfig()
+		RuntimeLevelConfig levelConfig = new RuntimeLevelConfig()
 			.setGenerator(map.createGenerator(context.server()));
 
-		return context.openWithWorld(worldConfig, (activity, world) -> {
-			ParkourRunWaitingPhase phase = new ParkourRunWaitingPhase(activity.getGameSpace(), world, map, config);
+		return context.openWithLevel(levelConfig, (activity, level) -> {
+			ParkourRunWaitingPhase phase = new ParkourRunWaitingPhase(activity.getGameSpace(), level, map, config);
 			GameWaitingLobby.addTo(activity, config.playerConfig());
 
 			ParkourRunActivePhase.setRules(activity);
@@ -58,7 +58,7 @@ public class ParkourRunWaitingPhase {
 	}
 
 	public GameResult requestStart() {
-		ParkourRunActivePhase.open(this.gameSpace, this.world, this.spawnLogic, this.config);
+		ParkourRunActivePhase.open(this.gameSpace, this.level, this.spawnLogic, this.config);
 		return GameResult.ok();
 	}
 
@@ -68,11 +68,11 @@ public class ParkourRunWaitingPhase {
 
 	public JoinAcceptorResult onAcceptPlayers(JoinAcceptor acceptor) {
 		return this.spawnLogic.acceptPlayers(acceptor).thenRunForEach(player -> {
-			player.changeGameMode(GameMode.ADVENTURE);
+			player.setGameMode(GameType.ADVENTURE);
 		});
 	}
 
-	public EventResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
+	public EventResult onPlayerDeath(ServerPlayer player, DamageSource source) {
 		// Respawn player at the start
 		this.spawnLogic.spawnPlayer(player);
 		return EventResult.DENY;

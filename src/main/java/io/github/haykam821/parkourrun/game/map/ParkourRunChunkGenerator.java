@@ -8,28 +8,28 @@ import java.util.Set;
 import io.github.haykam821.parkourrun.Main;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKeys;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.structure.PoolStructurePiece;
-import net.minecraft.structure.StructureLiquidSettings;
-import net.minecraft.structure.StructureTemplate;
-import net.minecraft.structure.StructureTemplateManager;
-import net.minecraft.structure.pool.SinglePoolElement;
-import net.minecraft.structure.pool.StructurePool;
-import net.minecraft.structure.pool.StructurePoolElement;
-import net.minecraft.util.BlockRotation;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockBox;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.StructureWorldAccess;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.gen.StructureAccessor;
+import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
+import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
+import net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement;
+import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
+import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.StructureManager;
 import xyz.nucleoid.map_templates.BlockBounds;
-import xyz.nucleoid.plasmid.api.game.world.generator.GameChunkGenerator;
+import xyz.nucleoid.plasmid.api.game.level.generator.GameChunkGenerator;
 
 public class ParkourRunChunkGenerator extends GameChunkGenerator {
 	private static final Identifier STARTS_ID = Main.identifier("starts");
@@ -39,87 +39,87 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 
 	private final ParkourRunMap map;
 	private final StructureTemplateManager structureTemplateManager;
-	private final Long2ObjectMap<List<PoolStructurePiece>> piecesByChunk = new Long2ObjectOpenHashMap<>();
+	private final Long2ObjectMap<List<PoolElementStructurePiece>> piecesByChunk = new Long2ObjectOpenHashMap<>();
 
-	private final StructurePool starts;
-	private final StructurePool areas;
-	private final StructurePool connectors;
-	private final StructurePool endings;
+	private final StructureTemplatePool starts;
+	private final StructureTemplatePool areas;
+	private final StructureTemplatePool connectors;
+	private final StructureTemplatePool endings;
 
 	public ParkourRunChunkGenerator(MinecraftServer server, ParkourRunMap map) {
 		super(server);
 		this.map = map;
-		this.structureTemplateManager = server.getStructureTemplateManager();
+		this.structureTemplateManager = server.getStructureManager();
 
-		Registry<StructurePool> poolRegistry = server.getRegistryManager().getOrThrow(RegistryKeys.TEMPLATE_POOL);
-		this.starts = poolRegistry.get(STARTS_ID);
-		this.areas = poolRegistry.get(AREAS_ID);
-		this.connectors = poolRegistry.get(CONNECTORS_ID);
-		this.endings = poolRegistry.get(ENDINGS_ID);
+		Registry<StructureTemplatePool> poolRegistry = server.registryAccess().lookupOrThrow(Registries.TEMPLATE_POOL);
+		this.starts = poolRegistry.getValue(STARTS_ID);
+		this.areas = poolRegistry.getValue(AREAS_ID);
+		this.connectors = poolRegistry.getValue(CONNECTORS_ID);
+		this.endings = poolRegistry.getValue(ENDINGS_ID);
 
-		for (PoolStructurePiece piece : this.generatePieces()) {
-			BlockBox box = piece.getBoundingBox();
-			int minChunkX = box.getMinX() >> 4;
-			int minChunkZ = box.getMinZ() >> 4;
-			int maxChunkX = box.getMaxX() >> 4;
-			int maxChunkZ = box.getMaxZ() >> 4;
+		for (PoolElementStructurePiece piece : this.generatePieces()) {
+			BoundingBox box = piece.getBoundingBox();
+			int minChunkX = box.minX() >> 4;
+			int minChunkZ = box.minZ() >> 4;
+			int maxChunkX = box.maxX() >> 4;
+			int maxChunkZ = box.maxZ() >> 4;
 
 			for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
 				for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-					long chunkPos = ChunkPos.toLong(chunkX, chunkZ);
-					List<PoolStructurePiece> piecesByChunk = this.piecesByChunk.computeIfAbsent(chunkPos, p -> new ArrayList<>());
+					long chunkPos = ChunkPos.pack(chunkX, chunkZ);
+					List<PoolElementStructurePiece> piecesByChunk = this.piecesByChunk.computeIfAbsent(chunkPos, p -> new ArrayList<>());
 					piecesByChunk.add(piece);
 				}
 			}
 		}
 	}
 
-	private void generatePiece(String marker, Set<PoolStructurePiece> pieces, StructurePoolElement element, Random random, BlockPos.Mutable pos) {
+	private void generatePiece(String marker, Set<PoolElementStructurePiece> pieces, StructurePoolElement element, RandomSource random, BlockPos.MutableBlockPos pos) {
 		if (!(element instanceof SinglePoolElement)) return;
-		StructureTemplate structure = ((SinglePoolElement) element).getStructure(this.structureTemplateManager);
+		StructureTemplate structure = ((SinglePoolElement) element).getTemplate(this.structureTemplateManager);
 
-		BlockPos endPos = pos.add(structure.getSize()).add(-1, -1, -1);
+		BlockPos endPos = pos.offset(structure.getSize()).offset(-1, -1, -1);
 
-		BlockBox box = BlockBox.create(pos, endPos);
-		PoolStructurePiece piece = new PoolStructurePiece(this.structureTemplateManager, element, pos.toImmutable(), 0, BlockRotation.NONE, box, StructureLiquidSettings.APPLY_WATERLOGGING);
+		BoundingBox box = BoundingBox.fromCorners(pos, endPos);
+		PoolElementStructurePiece piece = new PoolElementStructurePiece(this.structureTemplateManager, element, pos.immutable(), 0, Rotation.NONE, box, LiquidSettings.APPLY_WATERLOGGING);
 		pieces.add(piece);
 
 		this.map.getTemplate().getMetadata().addRegion(marker, BlockBounds.of(pos, endPos));
 		pos.move(Direction.EAST, structure.getSize().getX());
 	}
 
-	private Set<PoolStructurePiece> generatePieces() {
-		Set<PoolStructurePiece> pieces = new HashSet<>();
+	private Set<PoolElementStructurePiece> generatePieces() {
+		Set<PoolElementStructurePiece> pieces = new HashSet<>();
 
-		BlockPos.Mutable pos = this.map.getOrigin().mutableCopy();
-		Random random = Random.createLocal();
+		BlockPos.MutableBlockPos pos = this.map.getOrigin().mutable();
+		RandomSource random = RandomSource.createThreadLocalInstance();
 		int areaCount = this.map.getConfig().areaCount();
 
-		this.generatePiece("start", pieces, this.starts.getRandomElement(random), random, pos);
+		this.generatePiece("start", pieces, this.starts.getRandomTemplate(random), random, pos);
 		for (int index = 0; index < areaCount; index++) {
-			this.generatePiece("area", pieces, this.areas.getRandomElement(random), random, pos);
+			this.generatePiece("area", pieces, this.areas.getRandomTemplate(random), random, pos);
 			if (index + 1 < areaCount) {
-				this.generatePiece("connector", pieces, this.connectors.getRandomElement(random), random, pos);
+				this.generatePiece("connector", pieces, this.connectors.getRandomTemplate(random), random, pos);
 			}
 		}
-		this.generatePiece("ending", pieces, this.endings.getRandomElement(random), random, pos);
+		this.generatePiece("ending", pieces, this.endings.getRandomTemplate(random), random, pos);
 
 		return pieces;
 	}
 
 	@Override
-	public void generateFeatures(StructureWorldAccess world, Chunk chunk, StructureAccessor structures) {
+	public void applyBiomeDecoration(WorldGenLevel level, ChunkAccess chunk, StructureManager structures) {
 		if (this.piecesByChunk.isEmpty()) {
 			return;
 		}
 
 		ChunkPos chunkPos = chunk.getPos();
-		List<PoolStructurePiece> pieces = this.piecesByChunk.remove(chunkPos.toLong());
+		List<PoolElementStructurePiece> pieces = this.piecesByChunk.remove(chunkPos.pack());
 
 		if (pieces != null) {
-			BlockBox chunkBox = new BlockBox(chunkPos.getStartX(), world.getBottomY(), chunkPos.getStartZ(), chunkPos.getEndX(), world.getTopYInclusive(), chunkPos.getEndZ());
-			for (PoolStructurePiece piece : pieces) {
-				piece.generate(world, structures, this, world.getRandom(), chunkBox, this.map.getOrigin(), false);
+			BoundingBox chunkBox = new BoundingBox(chunkPos.getMinBlockX(), level.getMinY(), chunkPos.getMinBlockZ(), chunkPos.getMaxBlockX(), level.getMaxY(), chunkPos.getMaxBlockZ());
+			for (PoolElementStructurePiece piece : pieces) {
+				piece.place(level, structures, this, level.getRandom(), chunkBox, this.map.getOrigin(), false);
 			}
 		}
 	}

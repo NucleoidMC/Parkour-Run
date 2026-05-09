@@ -1,2 +1,2 @@
-accessWidener	v1	named
-accessible	method	net/minecraft/structure/pool/SinglePoolElement	getStructure	(Lnet/minecraft/structure/StructureTemplateManager;)Lnet/minecraft/structure/StructureTemplate;
+accessWidener	v1	official
+accessible	method	net/minecraft/world/level/levelgen/structure/pools/SinglePoolElement	getTemplate	(Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplateManager;)Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate;

@@ -3,14 +3,14 @@ package io.github.haykam821.parkourrun.game;
 import java.util.Set;
 
 import io.github.haykam821.parkourrun.game.map.ParkourRunMap;
-import net.minecraft.network.packet.s2c.play.TeamS2CPacket;
-import net.minecraft.scoreboard.AbstractTeam;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.Team;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
+import net.minecraft.world.scores.Team;
+import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.PlayerTeam;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.Vec3;
 import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.plasmid.api.game.GameSpacePlayers;
 import xyz.nucleoid.plasmid.api.game.player.JoinAcceptor;
@@ -18,48 +18,48 @@ import xyz.nucleoid.plasmid.api.game.player.JoinAcceptorResult;
 
 public class ParkourRunSpawnLogic {
 	private final ParkourRunMap map;
-	private final ServerWorld world;
-	private final Team runnerTeam;
+	private final ServerLevel world;
+	private final PlayerTeam runnerTeam;
 	private final boolean disableCollision;
 
-	public ParkourRunSpawnLogic(ParkourRunMap map, ServerWorld world, boolean disableCollision) {
+	public ParkourRunSpawnLogic(ParkourRunMap map, ServerLevel world, boolean disableCollision) {
 		this.map = map;
 		this.world = world;
-		this.runnerTeam = new Team(new Scoreboard(), "");
+		this.runnerTeam = new PlayerTeam(new Scoreboard(), "");
 		this.disableCollision = disableCollision;
-		runnerTeam.setCollisionRule(AbstractTeam.CollisionRule.NEVER);
+		runnerTeam.setCollisionRule(Team.CollisionRule.NEVER);
 	}
 
-	public Vec3d getSpawnPos() {
+	public Vec3 getSpawnPos() {
 		BlockBounds spawn = this.map.getSpawn();
-		return spawn == null ? Vec3d.ZERO : spawn.center();
+		return spawn == null ? Vec3.ZERO : spawn.center();
 	}
 
-	public void spawnPlayer(ServerPlayerEntity player) {
-		Vec3d pos = this.getSpawnPos();
-		player.teleport(this.world, pos.getX(), pos.getY(), pos.getZ(), Set.of(), -90, 0, true);
+	public void spawnPlayer(ServerPlayer player) {
+		Vec3 pos = this.getSpawnPos();
+		player.teleportTo(this.world, pos.x(), pos.y(), pos.z(), Set.of(), -90, 0, true);
 		if (disableCollision) {
-			player.networkHandler.sendPacket(TeamS2CPacket.updateTeam(runnerTeam, true));
-			player.networkHandler.sendPacket(TeamS2CPacket.changePlayerTeam(runnerTeam, player.getGameProfile().name(), TeamS2CPacket.Operation.ADD));
+			player.connection.send(ClientboundSetPlayerTeamPacket.createAddOrModifyPacket(runnerTeam, true));
+			player.connection.send(ClientboundSetPlayerTeamPacket.createPlayerPacket(runnerTeam, player.getGameProfile().name(), ClientboundSetPlayerTeamPacket.Action.ADD));
 		}
 	}
 
 	public JoinAcceptorResult.Teleport acceptPlayers(JoinAcceptor acceptor) {
 		return acceptor.teleport(this.world, this.getSpawnPos(), -90, 0).thenRunForEach((player) -> {
 			if (disableCollision) {
-				player.networkHandler.sendPacket(TeamS2CPacket.updateTeam(runnerTeam, true));
-				player.networkHandler.sendPacket(TeamS2CPacket.changePlayerTeam(runnerTeam, player.getGameProfile().name(), TeamS2CPacket.Operation.ADD));
+				player.connection.send(ClientboundSetPlayerTeamPacket.createAddOrModifyPacket(runnerTeam, true));
+				player.connection.send(ClientboundSetPlayerTeamPacket.createPlayerPacket(runnerTeam, player.getGameProfile().name(), ClientboundSetPlayerTeamPacket.Action.ADD));
 			}
 		});
 	}
 
-	public void onPlayerLeave(ServerPlayerEntity player) {
+	public void onPlayerLeave(ServerPlayer player) {
 		if (disableCollision) {
-			Team playerTeam = player.getScoreboardTeam();
+			PlayerTeam playerTeam = player.getTeam();
 			if (playerTeam != null) {
-				player.networkHandler.sendPacket(TeamS2CPacket.changePlayerTeam(playerTeam, player.getGameProfile().name(), TeamS2CPacket.Operation.ADD));
+				player.connection.send(ClientboundSetPlayerTeamPacket.createPlayerPacket(playerTeam, player.getGameProfile().name(), ClientboundSetPlayerTeamPacket.Action.ADD));
 			} else {
-				player.networkHandler.sendPacket(TeamS2CPacket.changePlayerTeam(runnerTeam, player.getGameProfile().name(), TeamS2CPacket.Operation.REMOVE));
+				player.connection.send(ClientboundSetPlayerTeamPacket.createPlayerPacket(runnerTeam, player.getGameProfile().name(), ClientboundSetPlayerTeamPacket.Action.REMOVE));
 			}
 		}
 	}
@@ -68,8 +68,8 @@ public class ParkourRunSpawnLogic {
 		BlockBounds start = this.map.getTemplate().getMetadata().getFirstRegionBounds("start");
 
 		if (start != null) {
-			for (ServerPlayerEntity player : players) {
-				if (!start.contains(player.getBlockPos())) {
+			for (ServerPlayer player : players) {
+				if (!start.contains(player.blockPosition())) {
 					this.spawnPlayer(player);
 				}
 			}

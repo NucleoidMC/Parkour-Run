@@ -2,21 +2,21 @@ package io.github.haykam821.parkourrun.game.phase;
 
 import java.util.Locale;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import xyz.nucleoid.plasmid.api.game.player.PlayerSet;
 
 public class ParkourRunResult {
-	private final PlayerEntity winner;
+	private final Player winner;
 	private final long time;
 
-	public ParkourRunResult(PlayerEntity winner, long time) {
+	public ParkourRunResult(Player winner, long time) {
 		this.winner = winner;
 		this.time = time;
 	}
 
-	public PlayerEntity getWinner() {
+	public Player getWinner() {
 		return this.winner;
 	}
 
@@ -24,8 +24,8 @@ public class ParkourRunResult {
 		return this.time / 20f;
 	}
 
-	public Text getMessage() {
-		return this.winner.getDisplayName().copy().append(String.format(" has won Parkour Run in %,d seconds!", (long) this.getTimeInSeconds(), Locale.ROOT)).formatted(Formatting.GOLD);
+	public Component getMessage() {
+		return this.winner.getDisplayName().copy().append(String.format(" has won Parkour Run in %,d seconds!", (long) this.getTimeInSeconds(), Locale.ROOT)).withStyle(ChatFormatting.GOLD);
 	}
 
 	public void announceTo(PlayerSet players) {
