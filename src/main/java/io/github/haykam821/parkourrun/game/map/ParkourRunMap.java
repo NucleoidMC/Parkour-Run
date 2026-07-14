@@ -32,7 +32,7 @@ public class ParkourRunMap {
 		return this.config;
 	}
 
-	public ChunkGenerator createGenerator(MinecraftServer server) {
+	public ParkourRunChunkGenerator createGenerator(MinecraftServer server) {
 		return new ParkourRunChunkGenerator(server, this);
 	}
 }

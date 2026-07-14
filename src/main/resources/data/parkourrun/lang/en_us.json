@@ -1,4 +1,7 @@
 {
 	"game.parkourrun.standard_parkour_run": "Parkour Run",
-	"gameType.parkourrun.parkour_run": "Parkour Run"
+	"gameType.parkourrun.parkour_run": "Parkour Run",
+	"parkourrun.passed_area": "New Area Passed",
+	"parkourrun.player_times": "Player Times:",
+	"parkourrun.current_time": "Current time: "
 }

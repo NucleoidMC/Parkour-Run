@@ -2,6 +2,8 @@ package io.github.haykam821.parkourrun.game.phase;
 
 import java.util.Locale;
 
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
@@ -25,10 +27,11 @@ public class ParkourRunResult {
 	}
 
 	public Component getMessage() {
-		return this.winner.getDisplayName().copy().append(String.format(" has won Parkour Run in %,d seconds!", (long) this.getTimeInSeconds(), Locale.ROOT)).withStyle(ChatFormatting.GOLD);
+		return this.winner.getDisplayName().copy().append(String.format(" has finished Parkour Run in %,d seconds!", (long) this.getTimeInSeconds(), Locale.ROOT)).withStyle(ChatFormatting.GOLD);
 	}
 
 	public void announceTo(PlayerSet players) {
 		players.sendMessage(this.getMessage());
+		players.playSound(SoundEvents.PLAYER_LEVELUP, SoundSource.UI, 1, 1);
 	}
 }

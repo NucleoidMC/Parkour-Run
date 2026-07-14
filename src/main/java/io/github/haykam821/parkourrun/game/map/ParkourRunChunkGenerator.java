@@ -45,7 +45,7 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 	private final StructureTemplatePool areas;
 	private final StructureTemplatePool connectors;
 	private final StructureTemplatePool endings;
-
+	private final ArrayList<BoundingBox> areaBoundingBoxes = new ArrayList<>();
 	public ParkourRunChunkGenerator(MinecraftServer server, ParkourRunMap map) {
 		super(server);
 		this.map = map;
@@ -56,7 +56,6 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 		this.areas = poolRegistry.getValue(AREAS_ID);
 		this.connectors = poolRegistry.getValue(CONNECTORS_ID);
 		this.endings = poolRegistry.getValue(ENDINGS_ID);
-
 		for (PoolElementStructurePiece piece : this.generatePieces()) {
 			BoundingBox box = piece.getBoundingBox();
 			int minChunkX = box.minX() >> 4;
@@ -81,6 +80,9 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 		BlockPos endPos = pos.offset(structure.getSize()).offset(-1, -1, -1);
 
 		BoundingBox box = BoundingBox.fromCorners(pos, endPos);
+		if (marker.equals("connector")) {
+			areaBoundingBoxes.add(box);
+		}
 		PoolElementStructurePiece piece = new PoolElementStructurePiece(this.structureTemplateManager, element, pos.immutable(), 0, Rotation.NONE, box, LiquidSettings.APPLY_WATERLOGGING);
 		pieces.add(piece);
 
@@ -105,6 +107,10 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 		this.generatePiece("ending", pieces, this.endings.getRandomTemplate(random), random, pos);
 
 		return pieces;
+	}
+
+	public ArrayList<BoundingBox> getAreaBoundingBoxes() {
+		return this.areaBoundingBoxes;
 	}
 
 	@Override
