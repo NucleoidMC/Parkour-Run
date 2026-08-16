@@ -1,5 +1,6 @@
 {
 	"type": "parkourrun:parkour_run",
+	"icon": "minecraft:diamond_boots",
 	"map": {
 		"areaCount": 10
 	},

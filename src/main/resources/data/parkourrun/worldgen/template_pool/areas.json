@@ -57,6 +57,14 @@
 			"projection": "rigid",
 			"processors": []
 		}
+	}, {
+		"weight": 1,
+		"element": {
+			"element_type": "minecraft:single_pool_element",
+			"location": "parkourrun:areas/windy_trials",
+			"projection": "rigid",
+			"processors": []
+		}
 	}
 	]
 }

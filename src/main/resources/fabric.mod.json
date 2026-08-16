@@ -16,6 +16,9 @@
 			"io.github.haykam821.parkourrun.Main"
 		]
 	},
+	"mixins": [
+		"parkourrun.mixins.json"
+	],
 	"accessWidener": "parkourrun.accesswidener",
 	"license": "MIT",
 	"icon": "assets/parkourrun/icon.png",

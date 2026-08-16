@@ -73,7 +73,7 @@ public class ParkourRunWaitingPhase {
 
 	public JoinAcceptorResult onAcceptPlayers(JoinAcceptor acceptor) {
 		return this.spawnLogic.acceptPlayers(acceptor).thenRunForEach(player -> {
-			player.setGameMode(GameType.ADVENTURE);
+			player.setGameMode(GameType.SURVIVAL);
 		});
 	}
 

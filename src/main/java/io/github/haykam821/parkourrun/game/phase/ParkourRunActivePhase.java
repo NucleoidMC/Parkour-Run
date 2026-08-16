@@ -11,9 +11,15 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -37,6 +43,7 @@ import xyz.nucleoid.plasmid.api.game.stats.GameStatisticBundle;
 import xyz.nucleoid.plasmid.api.game.stats.StatisticKey;
 import xyz.nucleoid.plasmid.api.util.PlayerUtil;
 import xyz.nucleoid.stimuli.event.EventResult;
+import xyz.nucleoid.stimuli.event.entity.EntityDeathEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 
 import static io.github.haykam821.parkourrun.Main.MOD_ID;
@@ -44,7 +51,7 @@ import static io.github.haykam821.parkourrun.Main.MOD_ID;
 public class ParkourRunActivePhase {
 	private static final StatisticKey<Integer> TIME_KEY = new StatisticKey<>(Main.identifier("time"), StatisticKey.ValueType.INT, false);
 	private final GameSpace gameSpace;
-	private final ServerLevel level;
+	public final ServerLevel level;
 	private final ParkourRunSpawnLogic spawnLogic;
 	private final ParkourRunConfig config;
 	private final ArrayList<BoundingBox> areaBoundingBoxes;
@@ -67,9 +74,14 @@ public class ParkourRunActivePhase {
 		this.stats = gameSpace.getStatistics().bundle(MOD_ID);
 		this.players = Sets.newHashSet(gameSpace.getPlayers().participants());
 		for (ServerPlayer player : this.players) {
+			ItemStack itemStack = new ItemStack(Items.MACE);
+			itemStack.enchant(player.level().getServer().registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
+					.get(Enchantments.WIND_BURST).orElseThrow(), 1);
+			player.getInventory().add(itemStack);
 			fillAreasPassed(player);
 		}
 		this.startTime = level.getGameTime();
+		Main.addGame(this);
 	}
 	public void setWidgets(SidebarWidget sidebar) {
 		this.sidebar = sidebar;
@@ -125,11 +137,13 @@ public class ParkourRunActivePhase {
 			phase.setWidgets(widgets.addSidebar());
 			// Listeners
 			activity.listen(GameActivityEvents.ENABLE, phase::enable);
+			activity.listen(GameActivityEvents.DESTROY, phase::onEnd);
 			activity.listen(GameActivityEvents.TICK, phase::tick);
 			activity.listen(GamePlayerEvents.ACCEPT, phase::onAcceptPlayers);
 			activity.listen(GamePlayerEvents.OFFER, JoinOffer::acceptSpectators);
 			activity.listen(GamePlayerEvents.LEAVE, phase.spawnLogic::onPlayerLeave);
 			activity.listen(PlayerDeathEvent.EVENT, phase::onPlayerDeath);
+			activity.listen(EntityDeathEvent.EVENT, phase::onEntityDeath);
 		});
 	}
 
@@ -212,6 +226,17 @@ public class ParkourRunActivePhase {
 		// Respawn player at the start
 		this.spawnLogic.spawnPlayer(player);
 		return EventResult.DENY;
+	}
+
+	private EventResult onEntityDeath(LivingEntity livingEntity, DamageSource damageSource) {
+		if (livingEntity instanceof ArmorStand) {
+			return EventResult.DENY;
+		}
+		return EventResult.PASS;
+	}
+
+	private void onEnd(GameCloseReason gameCloseReason) {
+		Main.removeGame(this);
 	}
 
 	private void endGame() {

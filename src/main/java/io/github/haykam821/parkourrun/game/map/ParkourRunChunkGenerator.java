@@ -76,7 +76,6 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 	private void generatePiece(String marker, Set<PoolElementStructurePiece> pieces, StructurePoolElement element, RandomSource random, BlockPos.MutableBlockPos pos) {
 		if (!(element instanceof SinglePoolElement)) return;
 		StructureTemplate structure = ((SinglePoolElement) element).getTemplate(this.structureTemplateManager);
-
 		BlockPos endPos = pos.offset(structure.getSize()).offset(-1, -1, -1);
 
 		BoundingBox box = BoundingBox.fromCorners(pos, endPos);
