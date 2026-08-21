@@ -122,6 +122,7 @@ public class ParkourRunActivePhase {
 		activity.deny(GameRuleType.FALL_DAMAGE);
 		activity.deny(GameRuleType.HUNGER);
 		activity.deny(GameRuleType.INTERACTION);
+		activity.deny(GameRuleType.BREAK_BLOCKS);
 	}
 
 	private void fillAreasPassed(ServerPlayer player) {
@@ -182,6 +183,7 @@ public class ParkourRunActivePhase {
 				playerCompleteTimes.put(player, finishTime);
 				ParkourRunResult result = new ParkourRunResult(player, this.level.getGameTime() - this.startTime);
 				result.announceTo(this.gameSpace.getPlayers());
+				player.setGameMode(GameType.SPECTATOR);
 				if (this.playerCompleteTimes.size() >= this.gameSpace.getPlayers().participants().size()) {
 					this.endGame();
 				}
