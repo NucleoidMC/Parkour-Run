@@ -46,6 +46,7 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 	private final StructureTemplatePool connectors;
 	private final StructureTemplatePool endings;
 	private final ArrayList<BoundingBox> areaBoundingBoxes = new ArrayList<>();
+	private int size = 0;
 	public ParkourRunChunkGenerator(MinecraftServer server, ParkourRunMap map) {
 		super(server);
 		this.map = map;
@@ -70,6 +71,7 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 					piecesByChunk.add(piece);
 				}
 			}
+			this.size = Math.max(this.size, piece.getBoundingBox().maxX());
 		}
 	}
 
@@ -110,6 +112,10 @@ public class ParkourRunChunkGenerator extends GameChunkGenerator {
 
 	public ArrayList<BoundingBox> getAreaBoundingBoxes() {
 		return this.areaBoundingBoxes;
+	}
+
+	public int getSize() {
+		return this.size;
 	}
 
 	@Override

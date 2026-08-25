@@ -64,13 +64,13 @@ public class ParkourRunActivePhase {
 	private int ticksUntilClose = -1;
 	private final int mapLength;
 	SidebarWidget sidebar = null;
-	public ParkourRunActivePhase(GameSpace gameSpace, ServerLevel level, ParkourRunSpawnLogic spawnLogic, ParkourRunConfig config, ArrayList<BoundingBox> areaBoundingBoxes) {
+	public ParkourRunActivePhase(GameSpace gameSpace, ServerLevel level, ParkourRunSpawnLogic spawnLogic, ParkourRunConfig config, ArrayList<BoundingBox> areaBoundingBoxes, int size) {
 		this.gameSpace = gameSpace;
 		this.level = level;
 		this.spawnLogic = spawnLogic;
 		this.config = config;
 		this.areaBoundingBoxes = areaBoundingBoxes;
-		this.mapLength = this.areaBoundingBoxes.getLast().maxX();
+		this.mapLength = size;
 		this.stats = gameSpace.getStatistics().bundle(MOD_ID);
 		this.players = Sets.newHashSet(gameSpace.getPlayers().participants());
 		for (ServerPlayer player : this.players) {
@@ -99,8 +99,11 @@ public class ParkourRunActivePhase {
 			ArrayList<ServerPlayer> playersLeft = new ArrayList<>(gameSpace.getPlayers().participants().stream()
 					.filter(player -> !playerCompleteTimes.containsKey(player)).toList());
 			playersLeft.sort((player1, player2) -> (int) (player2.getX() - player1.getX()));
-			for (ServerPlayer serverPlayer : playersLeft) {
-				builder.add(serverPlayer.getName());
+			for (ServerPlayer player : playersLeft) {
+				int percentage = Math.round(mapRange((float) player.getX(), 0, mapLength, 0, 100));
+				player.setExperienceLevels(percentage);
+				player.setExperiencePoints(Math.round(mapRange((float) player.getX(), 0, mapLength, 0, player.getXpNeededForNextLevel() - 1)));
+				builder.add(player.getName().copy().append(Component.empty().withStyle(ChatFormatting.GOLD).append(" (").append(String.valueOf(percentage)).append("%)")));
 			}
 		});
 		long time = (level.getGameTime() - this.startTime) / SharedConstants.TICKS_PER_SECOND;
@@ -129,12 +132,12 @@ public class ParkourRunActivePhase {
 		this.areasPlayerPassed.put(player, new ArrayList<>());
 	}
 
-	public static void open(GameSpace gameSpace, ServerLevel level, ParkourRunSpawnLogic spawnLogic, ParkourRunConfig config, ArrayList<BoundingBox> areaBoundingBoxes) {
-		ParkourRunActivePhase phase = new ParkourRunActivePhase(gameSpace, level, spawnLogic, config, areaBoundingBoxes);
-
+	public static void open(GameSpace gameSpace, ServerLevel level, ParkourRunSpawnLogic spawnLogic, ParkourRunConfig config, ArrayList<BoundingBox> areaBoundingBoxes, int mapLength) {
+		ParkourRunActivePhase phase = new ParkourRunActivePhase(gameSpace, level, spawnLogic, config, areaBoundingBoxes, mapLength);
 		gameSpace.setActivity(activity -> {
 			ParkourRunActivePhase.setRules(activity);
 			GlobalWidgets widgets = GlobalWidgets.addTo(activity);
+			gameSpace.getPlayers().participants().forEach((player) -> player.setGameMode(GameType.SURVIVAL));
 			phase.setWidgets(widgets.addSidebar());
 			// Listeners
 			activity.listen(GameActivityEvents.ENABLE, phase::enable);
@@ -142,7 +145,7 @@ public class ParkourRunActivePhase {
 			activity.listen(GameActivityEvents.TICK, phase::tick);
 			activity.listen(GamePlayerEvents.ACCEPT, phase::onAcceptPlayers);
 			activity.listen(GamePlayerEvents.OFFER, JoinOffer::acceptSpectators);
-			activity.listen(GamePlayerEvents.LEAVE, phase.spawnLogic::onPlayerLeave);
+			activity.listen(GamePlayerEvents.LEAVE, phase::onPlayerLeave);
 			activity.listen(PlayerDeathEvent.EVENT, phase::onPlayerDeath);
 			activity.listen(EntityDeathEvent.EVENT, phase::onEntityDeath);
 		});
@@ -175,8 +178,6 @@ public class ParkourRunActivePhase {
 		while (iterator.hasNext()) {
 			ServerPlayer player = iterator.next();
 			BlockState state = player.getBlockStateOn();
-			player.setExperienceLevels(99);
-			player.setExperiencePoints(Math.round(mapRange((float) player.getX(), 0, mapLength, 0, player.getXpNeededForNextLevel() - 1)));
 			if (state.is(Main.ENDING_PLATFORMS) && !playerCompleteTimes.containsKey(player)) {
 				int finishTime = Math.toIntExact((this.level.getGameTime() - this.startTime) / 20);
 				stats.forPlayer(player).set(ParkourRunActivePhase.TIME_KEY, finishTime);
@@ -218,6 +219,13 @@ public class ParkourRunActivePhase {
 				player.setGameMode(GameType.SPECTATOR);
 			}
 		});
+	}
+
+	private void onPlayerLeave(ServerPlayer serverPlayer) {
+		this.spawnLogic.onPlayerLeave(serverPlayer);
+		if (this.playerCompleteTimes.size() >= this.gameSpace.getPlayers().participants().size()) {
+			this.endGame();
+		}
 	}
 
 	public static float mapRange(float value, float inMin, float inMax, float outMin, float outMax) {

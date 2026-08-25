@@ -31,12 +31,14 @@ public class ParkourRunWaitingPhase {
 	private final ParkourRunSpawnLogic spawnLogic;
 	private final ParkourRunConfig config;
 	private final ArrayList<BoundingBox> areaBoundingBoxes;
-	public ParkourRunWaitingPhase(GameSpace gameSpace, ServerLevel level, ParkourRunMap map, ParkourRunConfig config, ArrayList<BoundingBox> areaBoundingBoxes) {
+	private final int mapSize;
+	public ParkourRunWaitingPhase(GameSpace gameSpace, ServerLevel level, ParkourRunMap map, ParkourRunConfig config, ArrayList<BoundingBox> areaBoundingBoxes, int mapSize) {
 		this.gameSpace = gameSpace;
 		this.level = level;
 		this.spawnLogic = new ParkourRunSpawnLogic(map, this.level, config.playerCollisions());
 		this.config = config;
 		this.areaBoundingBoxes = areaBoundingBoxes;
+		this.mapSize = mapSize;
 	}
 
 	public static GameOpenProcedure open(GameOpenContext<ParkourRunConfig> context) {
@@ -47,7 +49,7 @@ public class ParkourRunWaitingPhase {
 			.setGenerator(generator);
 
 		return context.openWithLevel(levelConfig, (activity, level) -> {
-			ParkourRunWaitingPhase phase = new ParkourRunWaitingPhase(activity.getGameSpace(), level, map, config, generator.getAreaBoundingBoxes());
+			ParkourRunWaitingPhase phase = new ParkourRunWaitingPhase(activity.getGameSpace(), level, map, config, generator.getAreaBoundingBoxes(), generator.getSize());
 			GameWaitingLobby.addTo(activity, config.playerConfig());
 
 			ParkourRunActivePhase.setRules(activity);
@@ -63,7 +65,7 @@ public class ParkourRunWaitingPhase {
 	}
 
 	public GameResult requestStart() {
-		ParkourRunActivePhase.open(this.gameSpace, this.level, this.spawnLogic, this.config, this.areaBoundingBoxes);
+		ParkourRunActivePhase.open(this.gameSpace, this.level, this.spawnLogic, this.config, this.areaBoundingBoxes, this.mapSize);
 		return GameResult.ok();
 	}
 
@@ -73,7 +75,7 @@ public class ParkourRunWaitingPhase {
 
 	public JoinAcceptorResult onAcceptPlayers(JoinAcceptor acceptor) {
 		return this.spawnLogic.acceptPlayers(acceptor).thenRunForEach(player -> {
-			player.setGameMode(GameType.SURVIVAL);
+			player.setGameMode(GameType.ADVENTURE);
 		});
 	}
 

@@ -3,5 +3,8 @@
 	"gameType.parkourrun.parkour_run": "Parkour Run",
 	"parkourrun.passed_area": "New Area Passed",
 	"parkourrun.player_times": "Player Times:",
-	"parkourrun.current_time": "Current time: "
+	"parkourrun.current_time": "Current time: ",
+
+	"statistic.bundle.parkourrun": "Parkour Run",
+	"statistics.parkourrun.time": "Completion Time (in Seconds):"
 }
